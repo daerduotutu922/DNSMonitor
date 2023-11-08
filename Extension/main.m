@@ -40,14 +40,20 @@ int main(int argc, char *argv[])
     //get args of application
     appArgs = getArgs(findProcess([APP_NAME stringByDeletingPathExtension]));
         
+    //dbg msg
+    if(YES != [appArgs containsObject:ARGS_JSON])
+    {
+        os_log(logHandle, "extension loaded!");
+    }
+        
     //start sysext
     // Apple notes, "call [this] as early as possible"
     [NEProvider startSystemExtensionMode];
             
     //dbg msg
-    if(YES != [appArgs containsObject:@"-json"])
+    if(YES != [appArgs containsObject:ARGS_JSON])
     {
-        os_log(logHandle, "enabled extension ('startSystemExtensionMode' was called)");
+        os_log(logHandle, "successfull enabled extension ('startSystemExtensionMode' was called)");
     }
     
     }//pool

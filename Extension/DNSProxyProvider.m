@@ -11,6 +11,7 @@
 #import <dns_util.h>
 #import <bsm/libbsm.h>
 
+#import "Consts.h"
 #import "Process.h"
 #import "DNSProxyProvider.h"
 
@@ -57,7 +58,7 @@ void dumpDNSCache(int signal) {
     NSData* json = nil;
     
     //json output?
-    if(YES == [appArgs containsObject:@"-json"])
+    if(YES == [appArgs containsObject:ARGS_JSON])
     {
         //serialize to JSON
         // wrap since we are serializing JSON
@@ -234,16 +235,25 @@ bail:
     dnsCache = [NSMutableArray array];
             
     //dbg msg
-    if(YES != [appArgs containsObject:@"-json"])
+    if(YES != [appArgs containsObject:ARGS_JSON])
     {
         os_log(logHandle, "method '%s' invoked", __PRETTY_FUNCTION__);
     }
     
     //block list
-    if(YES == [appArgs containsObject:@"-blocklist"])
+    if(YES == [appArgs containsObject:ARGS_BLOCK])
     {
         //load
         [self loadBlockList];
+    }
+    //no block list
+    else
+    {
+        //dbg msg
+        if(YES != [appArgs containsObject:ARGS_JSON])
+        {
+            os_log(logHandle, "no block list specified, all traffic will be allowed");
+        }
     }
     
     //setup signal handler
@@ -276,7 +286,7 @@ bail:
     NSArray* array = nil;
     
     //get index
-    index = [appArgs indexOfObject:@"-blocklist"];
+    index = [appArgs indexOfObject:ARGS_BLOCK];
     
     //file should be next
     index++;
@@ -292,7 +302,7 @@ bail:
     path = [appArgs objectAtIndex:index];
     
     //dbg msg
-    if(YES != [appArgs containsObject:@"-json"])
+    if(YES != [appArgs containsObject:ARGS_JSON])
     {
         os_log(logHandle, "using block list: %{public}@", path);
     }
@@ -301,7 +311,7 @@ bail:
     if(YES != [NSFileManager.defaultManager fileExistsAtPath:path])
     {
         //err msg
-        if(YES != [appArgs containsObject:@"-json"])
+        if(YES != [appArgs containsObject:ARGS_JSON])
         {
             os_log_error(logHandle, "ERROR: failed to find specified block list: %{public}@", path);
         }
@@ -315,7 +325,7 @@ bail:
     if(nil == data)
     {
         //err msg
-        if(YES != [appArgs containsObject:@"-json"])
+        if(YES != [appArgs containsObject:ARGS_JSON])
         {
             os_log_error(logHandle, "ERROR: failed to load block list: %{public}@", path);
         }
@@ -330,7 +340,7 @@ bail:
         (nil != error) )
     {
         //err msg
-        if(YES != [appArgs containsObject:@"-json"])
+        if(YES != [appArgs containsObject:ARGS_JSON])
         {
             os_log_error(logHandle, "ERROR: failed to unserialized block list: %{public}@", path);
         }
@@ -352,7 +362,7 @@ bail:
           completionHandler:(void (^)(void))completionHandler
 {
     //dbg msg
-    if(YES != [appArgs containsObject:@"-json"])
+    if(YES != [appArgs containsObject:ARGS_JSON])
     {
         os_log(logHandle, "method '%s' invoked", __PRETTY_FUNCTION__);
     }
@@ -409,7 +419,7 @@ bail:
         if(NULL == remoteEndpoint)
         {
             //err msg
-            if(YES != [appArgs containsObject:@"-json"])
+            if(YES != [appArgs containsObject:ARGS_JSON])
             {
                 os_log_error(logHandle, "ERROR: 'nw_endpoint_create_host' returned NULL");
             }
@@ -429,7 +439,7 @@ bail:
         if(NULL == remoteConnection)
         {
             //err msg
-            if(YES != [appArgs containsObject:@"-json"])
+            if(YES != [appArgs containsObject:ARGS_JSON])
             {
                 os_log_error(logHandle, "ERROR: 'nw_connection_create' returned NULL");
             }
@@ -455,7 +465,7 @@ bail:
             if(NULL != error)
             {
                 //err msg
-                if(YES != [appArgs containsObject:@"-json"])
+                if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log_error(logHandle, "ERROR: 'nw_connection_set_state_changed_handler' failed with %d", nw_error_get_error_code(error));
                 }
@@ -503,7 +513,7 @@ bail:
                         if(nil != error)
                         {
                             //err msg
-                            if(YES != [appArgs containsObject:@"-json"])
+                            if(YES != [appArgs containsObject:ARGS_JSON])
                             {
                                 os_log_error(logHandle, "ERROR: 'openWithLocalEndpoint' failed with %{public}@", error);
                             }
@@ -555,7 +565,7 @@ bail:
     else
     {
         //err msg
-        if(YES != [appArgs containsObject:@"-json"])
+        if(YES != [appArgs containsObject:ARGS_JSON])
         {
             //err msg
             os_log_error(logHandle, "ERROR: dropping unsupported flow type (%{public}@)", flow.className);
@@ -596,7 +606,7 @@ bail:
                 if(nil != receive_error)
                 {
                     //err msg
-                    if(YES != [appArgs containsObject:@"-json"])
+                    if(YES != [appArgs containsObject:ARGS_JSON])
                     {
                         os_log_error(logHandle, "ERROR: nw_connection_receive failed with %d", nw_error_get_error_code(receive_error));
                     }
@@ -632,7 +642,7 @@ bail:
                 if(YES == block)
                 {
                     //dbg msg
-                    if(YES != [appArgs containsObject:@"-json"])
+                    if(YES != [appArgs containsObject:ARGS_JSON])
                     {
                         os_log(logHandle, "blocking request (not writing to local flow)");
                     }
@@ -652,7 +662,7 @@ bail:
                         [flow closeWriteWithError:nil];
                         
                         //err msg
-                        if(YES != [appArgs containsObject:@"-json"])
+                        if(YES != [appArgs containsObject:ARGS_JSON])
                         {
                             os_log_error(logHandle, "writeDatagrams ERROR: %{public}@", error);
                         }
@@ -689,7 +699,7 @@ bail:
         if(nil != error)
         {
             //err msg
-            if(YES != [appArgs containsObject:@"-json"])
+            if(YES != [appArgs containsObject:ARGS_JSON])
             {
                 os_log_error(logHandle, "ERROR: 'readDatagramsWithCompletionHandler' failed with %{public}@", error);
             }
@@ -748,7 +758,7 @@ bail:
             if(YES == block)
             {
                 //dbg msg
-                if(YES != [appArgs containsObject:@"-json"])
+                if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log(logHandle, "blocking request (not sending to remote endpoint)");
                 }
@@ -764,7 +774,7 @@ bail:
             if(NULL == endpoint)
             {
                 //err msg
-                if(YES != [appArgs containsObject:@"-json"])
+                if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log_error(logHandle, "ERROR: 'nw_endpoint_create_host' returned NULL");
                 }
@@ -780,7 +790,7 @@ bail:
             if(NULL == connection)
             {
                 //err msg
-                if(YES != [appArgs containsObject:@"-json"])
+                if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log_error(logHandle, "ERROR: 'nw_connection_create' returned NULL");
                 }
@@ -802,7 +812,7 @@ bail:
                 if(NULL != error)
                 {
                     //err msg
-                    if(YES != [appArgs containsObject:@"-json"])
+                    if(YES != [appArgs containsObject:ARGS_JSON])
                     {
                         os_log_error(logHandle, "ERROR: 'nw_connection_set_state_changed_handler' failed with %d", nw_error_get_error_code(error));
                     }
@@ -834,7 +844,7 @@ bail:
                             if(NULL != error)
                             {
                                 //err msg
-                                if(YES != [appArgs containsObject:@"-json"])
+                                if(YES != [appArgs containsObject:ARGS_JSON])
                                 {
                                     os_log_error(logHandle, "ERROR: 'nw_connection_send' failed with %d", nw_error_get_error_code(error));
                                 }
@@ -905,7 +915,7 @@ bail:
             if(nil != receive_error)
             {
                 //err msg
-                if(YES != [appArgs containsObject:@"-json"])
+                if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log_error(logHandle, "ERROR: nw_connection_receive failed with %d", nw_error_get_error_code(receive_error));
                 }
@@ -932,7 +942,7 @@ bail:
             {
                 //err msg
                 //err msg
-                if(YES != [appArgs containsObject:@"-json"])
+                if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log_error(logHandle, "ERROR: reported length %d, greater than packet length %lu", length, (unsigned long)((NSData*)content).length);
                 }
@@ -965,7 +975,7 @@ bail:
             if(YES == block)
             {
                 //dbg msg
-                if(YES != [appArgs containsObject:@"-json"])
+                if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log(logHandle, "blocking request (not writing to local flow)");
                 }
@@ -990,7 +1000,7 @@ bail:
                     if(nil != error)
                     {
                         //err msg
-                        if(YES != [appArgs containsObject:@"-json"])
+                        if(YES != [appArgs containsObject:ARGS_JSON])
                         {
                             os_log_error(logHandle, "writeDatagrams ERROR: %{public}@", error);
                         }
@@ -1046,7 +1056,7 @@ bail:
         if(nil != error)
         {
             //err msg
-            if(YES != [appArgs containsObject:@"-json"])
+            if(YES != [appArgs containsObject:ARGS_JSON])
             {
                 os_log_error(logHandle, "ERROR: 'readDataWithCompletionHandler' failed with %{public}@", error);
             }
@@ -1084,7 +1094,7 @@ bail:
         if(data.length < sizeof(uint16_t) + length)
         {
             //err msg
-            if(YES != [appArgs containsObject:@"-json"])
+            if(YES != [appArgs containsObject:ARGS_JSON])
             {
                 os_log_error(logHandle, "ERROR: reported length %d, greater than packet length %lu", length, (unsigned long)data.length);
             }
@@ -1117,7 +1127,7 @@ bail:
         if(YES == block)
         {
             //dbg msg
-            if(YES != [appArgs containsObject:@"-json"])
+            if(YES != [appArgs containsObject:ARGS_JSON])
             {
                 os_log(logHandle, "blocking request (not sending to remote endpoint)");
             }
@@ -1145,7 +1155,7 @@ bail:
             if(NULL != error)
             {
                 //err msg
-                if(YES != [appArgs containsObject:@"-json"])
+                if(YES != [appArgs containsObject:ARGS_JSON])
                 {
                     os_log_error(logHandle, "ERROR: 'nw_connection_send' failed with %d", nw_error_get_error_code(error));
                 }
@@ -1205,7 +1215,7 @@ bail:
                     block = YES;
                     
                     //dbg msg
-                    if(YES != [appArgs containsObject:@"-json"])
+                    if(YES != [appArgs containsObject:ARGS_JSON])
                     {
                         os_log(logHandle, "will block request, question: %{public}@", question);
                     }
@@ -1250,7 +1260,7 @@ bail:
                             block = YES;
                             
                             //dbg msg
-                            if(YES != [appArgs containsObject:@"-json"])
+                            if(YES != [appArgs containsObject:ARGS_JSON])
                             {
                                 os_log(logHandle, "will block reply, answer: %{public}@", answer);
                             }
@@ -1351,7 +1361,7 @@ bail:
         if(errSecSuccess != status)
         {
             //err msg
-            if(YES != [appArgs containsObject:@"-json"])
+            if(YES != [appArgs containsObject:ARGS_JSON])
             {
                 os_log_error(logHandle, "ERROR: 'SecCodeCopyPath' failed with %#x", status);
             }
@@ -1379,7 +1389,7 @@ bail:
     else
     {
         //err msg
-        if(YES != [appArgs containsObject:@"-json"])
+        if(YES != [appArgs containsObject:ARGS_JSON])
         {
             os_log_error(logHandle, "ERROR: 'SecCodeCopyGuestWithAttributes' failed with %#x", status);
         }
@@ -1434,7 +1444,7 @@ bail:
     processInfo = [self getProcessInfo:flow];
     
     //json?
-    if(YES == [appArgs containsObject:@"-json"])
+    if(YES == [appArgs containsObject:ARGS_JSON])
     {
         //output as JSON
         os_log(logHandle, "%{public}@", [self toJSON:packet processInfo:processInfo]);
